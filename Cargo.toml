@@ -1,0 +1,26 @@
+[package]
+name = "ros-addresslist-updater"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+axum = "0.8"
+blake3 = "1"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+croner = "3"
+fs2 = "0.4"
+humantime = "2"
+ipnet = { version = "2", features = ["serde"] }
+prost = "0.14"
+rand = "0.9"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+tempfile = "3"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = "0.3"

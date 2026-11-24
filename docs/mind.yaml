@@ -1,0 +1,149 @@
+ros-addresslist-updater: # 全局配置
+
+global-settings:
+  first-run: no # 是否首次运行，yes|no, 会自动下载所有列表，初始化 ros 全部地址列表 rsc 方式，需要小心，执行后自动退出.下次 deamon 的更新需要改为 no
+  work-dir: /tmp/ros-addresslist-updater # 工作目录
+  log-dir: /tmp/ros-addresslist-updater/logs # 日志目录
+  log-level: debug # 日志级别
+  default-scheduler: "0 0 */2 * * *" # tokio-cron-scheduler 默认更新时间*，每两小时更新一次，每个任务可单独设置
+  download-timeout: 30s # 网络超时时间*
+  download-retry: 3 # 重试次数*
+  download-order: sequential # 下载顺序* 选项：sequential（可缩写sequ）、random（可缩写rand）
+  check-onstart: yes # 是否在启动时检查更新*
+  task-timeout: 60s # 单任务超时时间*
+  optimize-cidr: no # 是否优化合并相邻网段*
+  diff-update: yes # 是否只更新变化的网段*
+  update-method: api # 更新方法* 选项：api、rsc api:使用原生 httpapi 来更新适合适合增量更新,rsc 会生成一个 rsc 文件，上传到服务器通过 import 指令来更新
+  ip-type: cidr # 网段类型,暂时无用
+  ros-comment-prefix: "==" #ros 注释前/后缀  例: == idc.hk.alicloud ==
+  inline-comment-prefix: "#" # 内联注释前缀
+  use-etag: yes # 是否使用etag
+  diff-algo: blake3 # 文件变动对比算法，暂时写死
+  min-record-size: 10 #  最小记录数*，作为更新行为兜底，避免下载空文件
+  max-record-size: 10000 # 最大记录数*，作为更新行为兜底，避免下载异常文件
+  record-diff-threshold: 50% # 最大记录允许变动百分比*，如果超过则认为异常变动，日志中 warning 警告。不执行更新操作 默认：50%，
+  apply-endpoints: [ "host1", "host2" ] # 应用到哪些ROS节点*, 默认所有
+  # cache-file-name: "raw.githubusercontent.com_chinanet.txt_<ETAG>_<HASH>_<YYYYMMDDHHMMSS>"
+  # cdn-provider: jsdelivr
+
+  # ROS endpoints 配置
+ros-endpoints:
+- name: host1
+  address: 127.0.0.1
+  enable: yes
+  port: 80
+  ssl: no # 是否启用SSL（www-ssl)
+  username: admin
+  password: <PASSWORD>
+
+- name: host2
+  address: 127.0.0.1
+  enable: no
+  port: 8080
+  username: admin
+  password: <PASSWORD>
+
+# geoip 文件定时更新器
+geoip-updater:
+- source:
+  - https://github.com/v2fly/geoip/releases/latest/download/geoip.dat
+  - https://cdn.jsdelivr.net/gh/v2fly/geoip@release/geoip.dat
+scheduler: "59 59 23 * * *"
+
+# 地址列表更新任务
+task-lists:
+- name: ctc-v4 #电信v4
+  enable: yes
+  type: txt
+  ip-version: 4
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/chinanet.txt
+
+- name: ctc-v6 #电信v6
+  enable: yes
+  type: txt
+  ip-version: 6
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/chinanet6.txt
+
+- name: cmc-v4 #移动 v4
+  enable: no
+  type: txt
+  ip-version: 4
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/cmcc.txt
+
+- name: cmc-v6 #移动 v6
+  enable: no
+  type: txt
+  ip-version: 6
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/cmcc6.txt
+
+- name: cuc-v4 #联通 v4
+  enable: no
+  type: txt
+  ip-version: 4
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/unicom.txt
+
+- name: cuc-v6 #移动 v6
+  enable: no
+  type: txt
+  ip-version: 6
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/unicom6.txt
+
+- name: cn-v4 #中国 v4全量
+  enable: yes
+  type: txt
+  ip-version: 4
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/china.txt
+  whitelist:
+  #白名单地址列表，会追加到地址列表中，每行一个
+  - 6.6.6.6
+  - '6.6.3.3 #注释'
+  blacklist:
+  #黑名单地址列表，会追加到地址列表中，每行一个
+  - 114.114.114.114
+  whitelist-file: "" #白名单文件路径，会追加到地址列表中，直接v4/v6混写，会根据ip-version自动识别
+  blacklist-file: "" #黑名单文件路径，会追加到地址列表中，直接v4/v6混写，会根据ip-version自动识别
+
+- name: cn-v6 #中国 v6全量
+  enable: yes
+  type: txt
+  ip-version: 6
+  source:
+  - https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads/ip-lists/china6.txt
+  whitelist-file: ""
+  blacklist-file: ""
+
+- name: cn-v4-geoip #中国 v4全量优化
+  enable: yes
+  type: geoip
+  ip-version: 4
+  tags: [ 'cn', 'hk', 'mo' ] #geoip 数据库数据库记录标签，可多个
+  whitelist-file: ""
+  blacklist-file: ""
+  #scheduler: "* * */2 * * *" #scheduler无效，由 geoip-updater 判断有更新后触发
+
+- name: cn-v6-geoip #中国 v4全量优化
+  enable: yes
+  type: geoip
+  ip-version: 6
+  tags: [ 'cn', 'hk', 'mo' ]
+
+  whitelist-file: ""
+  blacklist-file: ""
+
+api:
+  enable: yes
+  listen: 0.0.0.0
+  port: 8080
+  path: /api/v1/live
+  network-acl:
+  - 192.168.0.0/16
+  - fd83:cafe::/64
+  address-list-allow: [ 'cn-v4', 'cn-v6' ]
+  default-ttl: 300
